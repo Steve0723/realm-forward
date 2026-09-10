@@ -778,59 +778,77 @@ port_from_address() {
     fi
 }
 
-validate_host_port() {
+validate_port() {
     local value="$1"
-    local host
     local port
 
-    [[ -n "${value}" ]] || {
-        err "地址不能为空"
+    [[ "${value}" =~ ^[0-9]{1,5}$ ]] || {
+        err "端口必须是 1-65535 的整数，当前为：${value}"
         return 1
     }
 
-    if [[ "${value}" =~ ^\[([^]]+)\]:([0-9]+)$ ]]; then
-        host="${BASH_REMATCH[1]}"
-        port="${BASH_REMATCH[2]}"
-    elif [[ "${value}" =~ ^([^:]+):([0-9]+)$ ]]; then
-        host="${BASH_REMATCH[1]}"
-        port="${BASH_REMATCH[2]}"
-    else
-        err "地址格式应为 host:port，IPv6 请写成 [::1]:8080"
-        return 1
-    fi
-
-    [[ "${host}" =~ ^[A-Za-z0-9._:-]+$ ]] || {
-        err "主机名或 IP 无效：${host}"
-        return 1
-    }
+    port=$((10#${value}))
     [[ "${port}" -ge 1 && "${port}" -le 65535 ]] || {
-        err "端口必须是 1-65535，当前为：${port}"
+        err "端口必须是 1-65535，当前为：${value}"
         return 1
     }
+
+    printf '%s' "${port}"
 }
 
-normalize_listen_address() {
+validate_listen_ip() {
     local value="$1"
 
-    if [[ "${value}" =~ ^[0-9]+$ ]]; then
-        value="0.0.0.0:${value}"
-    elif [[ "${value}" == :* ]]; then
-        value="0.0.0.0${value}"
+    if [[ "${value}" =~ ^\[([^]]+)\]$ ]]; then
+        value="${BASH_REMATCH[1]}"
+    fi
+    [[ -n "${value}" ]] || {
+        err "监听 IP 不能为空"
+        return 1
+    }
+    [[ "${value}" != *[][\\\;\"]* ]] || {
+        err "监听 IP 格式无效：${value}"
+        return 1
+    }
+    [[ "${value}" =~ ^[0-9A-Fa-f:.]+$ ]] || {
+        err "监听 IP 仅支持 IPv4 或 IPv6，例如 0.0.0.0、127.0.0.1、::"
+        return 1
+    }
+
+    printf '%s' "${value}"
+}
+
+validate_remote_host() {
+    local value="$1"
+
+    if [[ "${value}" =~ ^\[([^]]+)\]$ ]]; then
+        value="${BASH_REMATCH[1]}"
+    fi
+    [[ -n "${value}" ]] || {
+        err "目标 IP/域名不能为空"
+        return 1
+    }
+    [[ "${value}" =~ ^[A-Za-z0-9._:-]+$ ]] || {
+        err "目标 IP/域名格式无效：${value}"
+        return 1
+    }
+
+    printf '%s' "${value}"
+}
+
+format_host_port() {
+    local host="$1"
+    local port="$2"
+
+    if [[ "${host}" =~ ^\[([^]]+)\]$ ]]; then
+        host="${BASH_REMATCH[1]}"
     fi
 
-    printf '%s' "${value}"
-}
-
-validate_listen_address() {
-    local value="$1"
-    value="$(normalize_listen_address "${value}")"
-
-    validate_host_port "${value}" || return 1
-    printf '%s' "${value}"
-}
-
-validate_remote_address() {
-    validate_host_port "$1"
+    if [[ "${host}" == *:* ]]; then
+        printf '[%s]:%s' "${host}" "${port}"
+    else
+        printf '%s:%s' "${host}" "${port}"
+    fi
 }
 
 validate_ws_path() {
@@ -1002,6 +1020,10 @@ list_rules() {
 add_forward_rule() {
     local listen=""
     local remote=""
+    local listen_ip=""
+    local listen_port=""
+    local remote_host=""
+    local remote_port=""
     local mode=""
     local side=""
     local transport=""
@@ -1019,11 +1041,14 @@ add_forward_rule() {
     info "添加转发规则"
     printf '%s\n' "-------------------------------------------------------------"
 
-    listen="$(ask_valid "本机监听端口（默认绑定 IPv4，可输入 IP:端口）" validate_listen_address "8080")" || return 0
-    remote="$(ask_valid "目标地址，例如 192.168.1.10:80" validate_remote_address "127.0.0.1:80")" || return 0
+    listen_ip="$(ask_valid "本机监听 IP（IPv4 或 IPv6）" validate_listen_ip "0.0.0.0")" || return 0
+    listen_port="$(ask_valid "本机监听端口" validate_port "8080")" || return 0
+    remote_host="$(ask_valid "目标 IP/域名" validate_remote_host "127.0.0.1")" || return 0
+    remote_port="$(ask_valid "目标端口" validate_port "80")" || return 0
 
-    local listen_port
-    listen_port="$(port_from_address "${listen}")"
+    listen="$(format_host_port "${listen_ip}" "${listen_port}")"
+    remote="$(format_host_port "${remote_host}" "${remote_port}")"
+
     if grep -Fq "listen = \"${listen}\"" "${CONFIG_FILE}" 2>/dev/null; then
         err "监听地址 ${listen} 已存在，不能重复添加"
         return 0

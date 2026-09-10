@@ -5,7 +5,7 @@
 ## 功能
 
 - 依赖检查，从 GitHub 官方 Release 安装或更新 Realm
-- 添加、查看、删除转发规则
+- 添加、查看、删除转发规则，监听和目标地址均分开输入 IP/域名与端口
 - 支持 TCP、UDP、TCP+UDP、WebSocket、WSS 和 TLS
 - 加密类型可自由选择，支持自签名证书和自定义 PEM 证书
 - 支持 systemd、OpenRC 和普通进程方式管理服务
