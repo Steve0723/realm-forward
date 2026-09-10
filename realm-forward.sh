@@ -812,7 +812,9 @@ validate_host_port() {
 normalize_listen_address() {
     local value="$1"
 
-    if [[ "${value}" == :* ]]; then
+    if [[ "${value}" =~ ^[0-9]+$ ]]; then
+        value="0.0.0.0:${value}"
+    elif [[ "${value}" == :* ]]; then
         value="0.0.0.0${value}"
     fi
 
@@ -1017,7 +1019,7 @@ add_forward_rule() {
     info "添加转发规则"
     printf '%s\n' "-------------------------------------------------------------"
 
-    listen="$(ask_valid "本机监听地址，例如 0.0.0.0:8080" validate_listen_address "0.0.0.0:8080")" || return 0
+    listen="$(ask_valid "本机监听端口（默认绑定 IPv4，可输入 IP:端口）" validate_listen_address "8080")" || return 0
     remote="$(ask_valid "目标地址，例如 192.168.1.10:80" validate_remote_address "127.0.0.1:80")" || return 0
 
     local listen_port
