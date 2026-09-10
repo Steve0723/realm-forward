@@ -15,14 +15,16 @@
 ## 一键安装
 
 ```bash
-sudo bash -c 'curl -fsSL https://raw.githubusercontent.com/Steve0723/realm-forward/main/realm-forward.sh -o /usr/local/bin/realm-forward.sh && chmod +x /usr/local/bin/realm-forward.sh && /usr/local/bin/realm-forward.sh'
+sudo bash -c 'curl -fsSL "https://raw.githubusercontent.com/Steve0723/realm-forward/main/realm-forward.sh?v=$(date +%s)" -o /usr/local/bin/realm-forward.sh && chmod +x /usr/local/bin/realm-forward.sh && /usr/local/bin/realm-forward.sh'
 ```
 
 当前用户无需 root 时，也可以安装到用户目录：
 
 ```bash
-mkdir -p ~/.local/bin && curl -fsSL https://raw.githubusercontent.com/Steve0723/realm-forward/main/realm-forward.sh -o ~/.local/bin/realm-forward.sh && chmod +x ~/.local/bin/realm-forward.sh && ~/.local/bin/realm-forward.sh
+mkdir -p ~/.local/bin && curl -fsSL "https://raw.githubusercontent.com/Steve0723/realm-forward/main/realm-forward.sh?v=$(date +%s)" -o ~/.local/bin/realm-forward.sh && chmod +x ~/.local/bin/realm-forward.sh && ~/.local/bin/realm-forward.sh
 ```
+
+命令中的 `?v=$(date +%s)` 用于绕过 GitHub Raw 缓存，每次都会重新下载最新版脚本。
 
 以上命令只安装 Realm 管理脚本。进入主菜单后，请选择第 `1` 项手动安装或更新 Realm。
 
