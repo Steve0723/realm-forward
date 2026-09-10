@@ -1181,13 +1181,13 @@ ask_valid() {
     local attempts=0
 
     while true; do
-        printf '%s' "${C_CYAN}${prompt}${C_RESET}"
+        printf '%s' "${C_CYAN}${prompt}${C_RESET}" >&2
         if [[ -n "${default}" ]]; then
-            printf ' [默认 %s]' "${default}"
+            printf ' [默认 %s]' "${default}" >&2
         fi
-        printf '：'
+        printf '：' >&2
         if ! read -r -e value; then
-            printf '\n'
+            printf '\n' >&2
             return 1
         fi
         value="${value%$'\r'}"
